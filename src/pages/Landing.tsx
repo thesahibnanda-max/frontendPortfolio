@@ -1,14 +1,12 @@
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { motion } from 'motion/react'
 import { toast } from 'sonner'
 import { AmbientRatingLine } from '@/components/chat/AmbientRatingLine'
 import { MessageInput } from '@/components/chat/MessageInput'
 import { MessageList } from '@/components/chat/MessageList'
 import { StarterPrompts } from '@/components/chat/StarterPrompts'
-import { AuthGateModal } from '@/components/chat/AuthGateModal'
 import { ThreadHeader } from '@/components/chat/ThreadHeader'
 import { ThreadSkeleton } from '@/components/chat/ThreadSkeleton'
-import { useAuthStore } from '@/store/auth'
 import { useChatUiStore } from '@/store/chatUi'
 import { useChat, useCreateChat, useSendMessage } from '@/hooks/useChats'
 import { ApiError } from '@/api/client'
@@ -19,10 +17,8 @@ function chatTitleFrom(message: string) {
 
 export function Landing() {
   const [input, setInput] = useState('')
-  const pendingMessageRef = useRef<string | null>(null)
 
-  const isAuthed = useAuthStore((s) => s.token !== null)
-  const { activeChatId, setActiveChatId, openAuthGate } = useChatUiStore()
+  const { activeChatId, setActiveChatId } = useChatUiStore()
 
   const chatQuery = useChat(activeChatId)
   const createChat = useCreateChat()
@@ -50,19 +46,7 @@ export function Landing() {
     const trimmed = message.trim()
     if (!trimmed) return
     setInput('')
-
-    if (!isAuthed) {
-      pendingMessageRef.current = trimmed
-      openAuthGate()
-      return
-    }
     void doSend(trimmed)
-  }
-
-  const handleAuthenticated = () => {
-    const pending = pendingMessageRef.current
-    pendingMessageRef.current = null
-    if (pending) void doSend(pending)
   }
 
   const startNewChat = () => {
@@ -105,8 +89,6 @@ export function Landing() {
 
           <StarterPrompts onSelect={handleSubmit} />
         </motion.div>
-
-        <AuthGateModal onAuthenticated={handleAuthenticated} />
       </div>
     )
   }
@@ -131,7 +113,6 @@ export function Landing() {
           />
         </div>
       </div>
-      <AuthGateModal onAuthenticated={handleAuthenticated} />
     </div>
   )
 }

@@ -1,6 +1,10 @@
 import { config } from '@/lib/config'
 import { useAuthStore } from '@/store/auth'
+import { useSessionStore } from '@/store/session'
 import type { ApiErrorPayload } from './types'
+
+/** Header the anonymous-visitor session id travels on, both ways. */
+const X_SESSION_ID = 'X-Session-Id'
 
 export class ApiError extends Error {
   readonly status: number
@@ -46,12 +50,17 @@ async function request<T>(
     const token = useAuthStore.getState().token
     if (token) headers['X-Auth-Token'] = token
   }
+  const sessionId = useSessionStore.getState().sessionId
+  if (sessionId) headers[X_SESSION_ID] = sessionId
 
   const res = await fetch(`${config.apiBaseUrl}${path}`, {
     method,
     headers,
     body: body !== undefined ? JSON.stringify(body) : undefined,
   })
+
+  const returnedSessionId = res.headers.get(X_SESSION_ID)
+  if (returnedSessionId) useSessionStore.getState().setSessionId(returnedSessionId)
 
   onHeaders?.(res.headers)
 

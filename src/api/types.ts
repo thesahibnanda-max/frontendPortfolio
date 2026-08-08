@@ -265,7 +265,8 @@ export interface Message {
 
 export interface ChatObject {
   chatId: string
-  username: string
+  /** Absent for anonymous (session-cookie-scoped) chats. */
+  username?: string
   chatTitle: string
   messages: Message[]
   createdAt: string
