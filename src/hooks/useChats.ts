@@ -22,7 +22,7 @@ export const useChat = (chatId: string | null) =>
   useQuery({
     queryKey: ['chats', chatId],
     queryFn: () => getChat(chatId as string),
-    enabled: isAuthed() && chatId !== null,
+    enabled: chatId !== null,
   })
 
 export const useCreateChat = () => {

@@ -5,6 +5,8 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import { ChatHistoryPanel } from './ChatHistoryPanel'
+import { InlineAuthPrompt } from './InlineAuthPrompt'
+import { useAuthStore } from '@/store/auth'
 import { useGoToChat } from '@/hooks/useGoToChat'
 
 /** Mobile-only overlay presentation of the chat history panel (below `md:`). */
@@ -15,6 +17,7 @@ export function ChatHistorySheet({
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
+  const isAuthed = useAuthStore((s) => s.token !== null)
   const goToChat = useGoToChat()
 
   const selectChat = (chatId: string) => {
@@ -31,9 +34,15 @@ export function ChatHistorySheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="left" className="p-0">
         <SheetHeader className="border-b border-border px-4 py-4">
-          <SheetTitle className="font-heading">Your conversations</SheetTitle>
+          <SheetTitle className="font-heading">
+            {isAuthed ? 'Your conversations' : 'Sign in to save chats'}
+          </SheetTitle>
         </SheetHeader>
-        <ChatHistoryPanel onSelectChat={selectChat} onNewChat={startNewChat} />
+        {isAuthed ? (
+          <ChatHistoryPanel onSelectChat={selectChat} onNewChat={startNewChat} />
+        ) : (
+          <InlineAuthPrompt />
+        )}
       </SheetContent>
     </Sheet>
   )

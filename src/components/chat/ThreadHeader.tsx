@@ -3,9 +3,11 @@ import { Pencil, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useRenameChat } from '@/hooks/useChats'
+import { useAuthStore } from '@/store/auth'
 import type { ChatObject } from '@/api/types'
 
 export function ThreadHeader({ chat, onNewChat }: { chat: ChatObject; onNewChat: () => void }) {
+  const isAuthed = useAuthStore((s) => s.token !== null)
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(chat.chatTitle)
   const renameChat = useRenameChat()
@@ -43,7 +45,7 @@ export function ThreadHeader({ chat, onNewChat }: { chat: ChatObject; onNewChat:
           onBlur={commit}
           className="h-8 max-w-sm flex-1"
         />
-      ) : (
+      ) : isAuthed ? (
         <button
           onClick={startEditing}
           className="group flex min-w-0 flex-1 items-center gap-1.5 text-left text-sm font-medium"
@@ -51,6 +53,10 @@ export function ThreadHeader({ chat, onNewChat }: { chat: ChatObject; onNewChat:
           <span className="truncate">{chat.chatTitle}</span>
           <Pencil className="size-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
         </button>
+      ) : (
+        <span className="min-w-0 flex-1 truncate text-left text-sm font-medium">
+          {chat.chatTitle}
+        </span>
       )}
 
       <Button variant="ghost" size="sm" onClick={onNewChat} className="shrink-0 gap-1.5">

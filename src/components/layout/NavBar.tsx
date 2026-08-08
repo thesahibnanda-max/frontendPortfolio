@@ -3,7 +3,6 @@ import { PanelLeft } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { ThemeToggle } from './ThemeToggle'
-import { useAuthStore } from '@/store/auth'
 import { useChatUiStore } from '@/store/chatUi'
 import { useProfessionalDetails } from '@/hooks/useDetails'
 import { Present } from '@/components/common/Present'
@@ -17,7 +16,6 @@ const NAV_LINKS = [
 ]
 
 export function NavBar() {
-  const isAuthed = useAuthStore((s) => s.token !== null)
   const { data: professional } = useProfessionalDetails()
   const toggleSidebar = useChatUiStore((s) => s.toggleSidebar)
   const setMobileHistoryOpen = useChatUiStore((s) => s.setMobileHistoryOpen)
@@ -60,11 +58,9 @@ export function NavBar() {
         </nav>
 
         <div className="flex items-center gap-1">
-          {isAuthed && (
-            <Button variant="ghost" size="icon" aria-label="Toggle chat history" onClick={handleToggleHistory}>
-              <PanelLeft className="size-4" />
-            </Button>
-          )}
+          <Button variant="ghost" size="icon" aria-label="Toggle chat history" onClick={handleToggleHistory}>
+            <PanelLeft className="size-4" />
+          </Button>
           <ThemeToggle />
         </div>
       </div>
