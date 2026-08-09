@@ -148,7 +148,7 @@ export function About() {
         {(langs) => (
           <Reveal delay={0.05}>
             <section className="mt-8">
-              <SectionHeading>Languages</SectionHeading>
+              <SectionHeading>Languages I Speak</SectionHeading>
               <div className="flex flex-wrap gap-2">
                 {langs.map((l, i) => (
                   <Chip key={i}>

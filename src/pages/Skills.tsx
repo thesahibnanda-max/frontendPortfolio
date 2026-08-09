@@ -27,6 +27,9 @@ export function Skills() {
 
   const categories = profile?.skillsByCategory ? Object.entries(profile.skillsByCategory) : []
 
+  const categoryLabel = (category: string) =>
+    category.trim().toLowerCase() === 'languages' ? 'Programming Languages' : category
+
   return (
     <div className="mx-auto w-full min-w-0 max-w-4xl px-4 py-16 sm:py-24">
       <Reveal>
@@ -39,7 +42,7 @@ export function Skills() {
             <Reveal key={category} delay={Math.min(i * 0.05, 0.3)}>
               <div>
                 <h2 className="mb-3 text-xs font-medium tracking-widest text-muted-foreground uppercase">
-                  {category}
+                  {categoryLabel(category)}
                 </h2>
                 <div className="flex flex-wrap gap-2">
                   {skills.map((skill) => (
@@ -57,7 +60,7 @@ export function Skills() {
           <Reveal>
             <section className="mt-12">
               <h2 className="mb-3 text-xs font-medium tracking-widest text-muted-foreground uppercase">
-                Programming languages
+                Languages I Speak
               </h2>
               <div className="flex flex-wrap gap-2">
                 {languages.map((lang) => (
