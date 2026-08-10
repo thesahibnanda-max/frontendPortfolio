@@ -295,3 +295,13 @@ export interface ChatRequest {
 export interface SearchRequest {
   query: string
 }
+
+// ---- Chat streaming (SSE frame payloads, see api/sse.ts) ----
+export interface ChatStreamTokenEvent {
+  content: string
+}
+
+export interface ChatStreamDoneEvent {
+  message: string
+  timestamp: string // ISO-8601 instant
+}
