@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { motion } from 'motion/react'
 import { toast } from 'sonner'
@@ -33,9 +33,17 @@ interface ActiveStream {
   assistantText: string
 }
 
+/** A just-completed stream, scoped to the chat it belongs to, so a chat you've navigated away from can't force a resnap in the chat you're currently viewing. */
+interface StreamCompletion {
+  chatId: string
+  token: number
+}
+
 export function Landing() {
   const [input, setInput] = useState('')
   const [activeStream, setActiveStream] = useState<ActiveStream | null>(null)
+  const [streamCompletion, setStreamCompletion] = useState<StreamCompletion | null>(null)
+  const streamCompletionTokenRef = useRef(0)
 
   const { activeChatId, setActiveChatId } = useChatUiStore()
   const { streamingEnabled } = useStreamingPreferenceStore()
@@ -55,6 +63,16 @@ export function Landing() {
   // the user navigated elsewhere.
   const streamingForActiveChat =
     activeStream !== null && activeStream.chatId === activeChatId ? activeStream : null
+
+  // Signals MessageList to force a final resnap-to-bottom exactly when a
+  // stream for the currently-viewed chat has just finished. `messages.length`
+  // alone can't do this: the synthetic in-progress entries `displayMessages`
+  // adds below occupy the same array slots the real persisted messages land
+  // in at `done`, so the array length never changes across that swap and the
+  // length-keyed resnap effect in MessageList would otherwise never re-fire
+  // at the exact completion moment.
+  const streamCompletedSignal =
+    streamCompletion !== null && streamCompletion.chatId === activeChatId ? streamCompletion.token : undefined
 
   const isSending = createChat.isPending || sendMessage.isPending || streamingForActiveChat !== null
 
@@ -146,6 +164,8 @@ export function Landing() {
           }
           queryClient.invalidateQueries({ queryKey: ['chats'] })
           clearOwnStream()
+          streamCompletionTokenRef.current += 1
+          setStreamCompletion({ chatId, token: streamCompletionTokenRef.current })
         },
       })
       if (!doneFired) {
@@ -239,7 +259,11 @@ export function Landing() {
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col">
       {chatQuery.data && <ThreadHeader chat={chatQuery.data} onNewChat={startNewChat} />}
-      <MessageList messages={displayMessages} isSending={showTypingIndicator} />
+      <MessageList
+        messages={displayMessages}
+        isSending={showTypingIndicator}
+        streamCompletedSignal={streamCompletedSignal}
+      />
       <div className="shrink-0 border-t border-border/80 bg-background px-4 py-3">
         <div className="mx-auto w-full max-w-3xl">
           <MessageInput

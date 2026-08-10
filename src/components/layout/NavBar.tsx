@@ -2,6 +2,7 @@ import { NavLink } from 'react-router-dom'
 import { PanelLeft } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { StreamingToggle } from './StreamingToggle'
 import { ThemeToggle } from './ThemeToggle'
 import { useChatUiStore } from '@/store/chatUi'
@@ -59,9 +60,16 @@ export function NavBar() {
         </nav>
 
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" aria-label="Toggle chat history" onClick={handleToggleHistory}>
-            <PanelLeft className="size-4" />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button variant="ghost" size="icon" aria-label="Toggle chat history" onClick={handleToggleHistory} />
+              }
+            >
+              <PanelLeft className="size-4" />
+            </TooltipTrigger>
+            <TooltipContent>Toggle chat history</TooltipContent>
+          </Tooltip>
           <StreamingToggle />
           <ThemeToggle />
         </div>

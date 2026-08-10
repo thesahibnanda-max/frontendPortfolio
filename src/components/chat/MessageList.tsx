@@ -8,9 +8,12 @@ const NEAR_BOTTOM_THRESHOLD = 120
 export function MessageList({
   messages,
   isSending,
+  streamCompletedSignal,
 }: {
   messages: Message[]
   isSending: boolean
+  /** Bumped by the caller exactly when a stream for the currently-viewed chat has just finished, forcing a final resnap even when `messages.length` didn't change across that transition. */
+  streamCompletedSignal?: number
 }) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
@@ -49,11 +52,15 @@ export function MessageList({
     return () => observer.disconnect()
   }, [])
 
-  // A new message (send starting, or a reply landing) always snaps to bottom.
+  // A new message (send starting, or a reply landing) always snaps to
+  // bottom. `streamCompletedSignal` covers the one case `messages.length`
+  // can't: a stream finishing where the synthetic in-progress entry already
+  // occupied the slot the real persisted message lands in, so the length
+  // never changes across that swap.
   useEffect(() => {
     stickToBottomRef.current = true
     scrollToBottom()
-  }, [messages.length, isSending])
+  }, [messages.length, isSending, streamCompletedSignal])
 
   return (
     <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto">
