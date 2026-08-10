@@ -8,9 +8,11 @@ const NEAR_BOTTOM_THRESHOLD = 120
 export function MessageList({
   messages,
   isSending,
+  streamingMessage = null,
 }: {
   messages: Message[]
   isSending: boolean
+  streamingMessage?: string | null
 }) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
@@ -61,7 +63,13 @@ export function MessageList({
         {messages.map((message, i) => (
           <MessageBubble key={i} message={message} />
         ))}
-        {isSending && <TypingIndicator />}
+        {streamingMessage ? (
+          <MessageBubble
+            message={{ role: 'ASSISTANT', message: streamingMessage, timestamp: new Date().toISOString() }}
+          />
+        ) : (
+          isSending && <TypingIndicator />
+        )}
       </div>
     </div>
   )
