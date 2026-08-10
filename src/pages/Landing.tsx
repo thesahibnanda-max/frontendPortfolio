@@ -43,6 +43,12 @@ export function Landing() {
       setStreamingMessage(buffer)
       flushTimer = undefined
     }
+    const clearFlushTimer = () => {
+      if (flushTimer !== undefined) {
+        clearTimeout(flushTimer)
+        flushTimer = undefined
+      }
+    }
     let doneFired = false
 
     try {
@@ -55,10 +61,7 @@ export function Landing() {
         },
         onDone: (finalMessage, timestamp) => {
           doneFired = true
-          if (flushTimer !== undefined) {
-            clearTimeout(flushTimer)
-            flushTimer = undefined
-          }
+          clearFlushTimer()
           const prior = queryClient.getQueryData<ChatObject>(['chats', chatId])
           if (prior) {
             const userMsg: Message = { role: 'USER', message, timestamp: new Date().toISOString() }
@@ -81,6 +84,7 @@ export function Landing() {
         throw new Error('Stream ended without a completion event.')
       }
     } catch (err) {
+      clearFlushTimer()
       setStreamingMessage(null)
       toast.error(err instanceof ApiError ? err.displayMessage : 'Failed to stream message.')
       queryClient.invalidateQueries({ queryKey: ['chats', chatId] })
