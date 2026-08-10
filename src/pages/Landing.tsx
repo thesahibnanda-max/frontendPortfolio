@@ -19,9 +19,23 @@ function chatTitleFrom(message: string) {
   return message.length > 48 ? `${message.slice(0, 48)}…` : message
 }
 
+/**
+ * An in-progress streamed send, scoped to the chat it belongs to. Keeping
+ * `chatId` bundled with the text (rather than a bare `string | null`) is
+ * what lets the UI tell "my active chat's stream" apart from "some other
+ * chat's stream that's still running in the background" — see Important #3
+ * in the final review: without this, switching chats mid-stream leaked the
+ * old chat's partial text into whatever chat you navigated to.
+ */
+interface ActiveStream {
+  chatId: string
+  userText: string
+  assistantText: string
+}
+
 export function Landing() {
   const [input, setInput] = useState('')
-  const [streamingMessage, setStreamingMessage] = useState<string | null>(null)
+  const [activeStream, setActiveStream] = useState<ActiveStream | null>(null)
 
   const { activeChatId, setActiveChatId } = useChatUiStore()
   const { streamingEnabled } = useStreamingPreferenceStore()
@@ -31,16 +45,55 @@ export function Landing() {
   const createChat = useCreateChat()
   const sendMessage = useSendMessage()
 
-  const isSending = createChat.isPending || sendMessage.isPending || streamingMessage !== null
   const messages = chatQuery.data?.messages ?? []
   const hasStarted = activeChatId !== null
 
+  // Only surface the stream in the UI if it belongs to the chat we're
+  // currently looking at. The async work in doStreamingSend below keeps
+  // running to completion (and still writes to the right chat's cache
+  // entry via its own captured `chatId`) even when this is null because
+  // the user navigated elsewhere.
+  const streamingForActiveChat =
+    activeStream !== null && activeStream.chatId === activeChatId ? activeStream : null
+
+  const isSending = createChat.isPending || sendMessage.isPending || streamingForActiveChat !== null
+
+  // Show the typing indicator whenever something for THIS chat is in
+  // flight and there's no reply content to show yet — once the first
+  // streamed token arrives, `displayMessages` below already carries a
+  // growing assistant bubble, so the indicator steps aside for it.
+  const showTypingIndicator =
+    isSending && (streamingForActiveChat === null || streamingForActiveChat.assistantText === '')
+
+  // The real message list, plus — only while a stream for this exact chat
+  // is in progress — two synthetic trailing entries occupying the SAME
+  // array slots the real persisted messages will land in once `done`
+  // fires. Keeping them in the same keyed positions (see MessageList's
+  // `key={i}`) is what lets React reconcile the existing DOM node instead
+  // of unmounting the streaming bubble and mounting a fresh one, which
+  // used to cause the end-of-stream skeleton flash / re-animation.
+  const displayMessages: Message[] = streamingForActiveChat
+    ? [
+        ...messages,
+        { role: 'USER', message: streamingForActiveChat.userText, timestamp: new Date().toISOString() },
+        ...(streamingForActiveChat.assistantText
+          ? [
+              {
+                role: 'ASSISTANT',
+                message: streamingForActiveChat.assistantText,
+                timestamp: new Date().toISOString(),
+              } satisfies Message,
+            ]
+          : []),
+      ]
+    : messages
+
   const doStreamingSend = async (chatId: string, message: string) => {
-    setStreamingMessage('')
+    setActiveStream({ chatId, userText: message, assistantText: '' })
     let buffer = ''
     let flushTimer: ReturnType<typeof setTimeout> | undefined
     const flush = () => {
-      setStreamingMessage(buffer)
+      setActiveStream((prev) => (prev && prev.chatId === chatId ? { ...prev, assistantText: buffer } : prev))
       flushTimer = undefined
     }
     const clearFlushTimer = () => {
@@ -48,6 +101,13 @@ export function Landing() {
         clearTimeout(flushTimer)
         flushTimer = undefined
       }
+    }
+    // Clears this send's stream state, but only if it's still the one
+    // showing — guards against a later/other doStreamingSend call (e.g.
+    // the user started a new chat's stream in the meantime) having already
+    // replaced it in `activeStream`.
+    const clearOwnStream = () => {
+      setActiveStream((prev) => (prev && prev.chatId === chatId ? null : prev))
     }
     let doneFired = false
 
@@ -64,16 +124,28 @@ export function Landing() {
           clearFlushTimer()
           const prior = queryClient.getQueryData<ChatObject>(['chats', chatId])
           if (prior) {
-            const userMsg: Message = { role: 'USER', message, timestamp: new Date().toISOString() }
-            const assistantMsg: Message = { role: 'ASSISTANT', message: finalMessage, timestamp }
-            queryClient.setQueryData(['chats', chatId], {
-              ...prior,
-              messages: [...prior.messages, userMsg, assistantMsg],
-              updatedAt: timestamp,
-            })
+            const lastMessage = prior.messages[prior.messages.length - 1]
+            const alreadyMerged =
+              lastMessage !== undefined &&
+              lastMessage.role === 'ASSISTANT' &&
+              lastMessage.message === finalMessage
+            // Guards against a `['chats', chatId]` refetch landing between
+            // the backend persisting both messages and this onDone firing
+            // client-side, which would otherwise append a duplicate pair
+            // here (self-heals on the next invalidateQueries refetch, but
+            // this avoids the visible duplicate round-trip in the meantime).
+            if (!alreadyMerged) {
+              const userMsg: Message = { role: 'USER', message, timestamp: new Date().toISOString() }
+              const assistantMsg: Message = { role: 'ASSISTANT', message: finalMessage, timestamp }
+              queryClient.setQueryData(['chats', chatId], {
+                ...prior,
+                messages: [...prior.messages, userMsg, assistantMsg],
+                updatedAt: timestamp,
+              })
+            }
           }
           queryClient.invalidateQueries({ queryKey: ['chats'] })
-          setStreamingMessage(null)
+          clearOwnStream()
         },
       })
       if (!doneFired) {
@@ -85,7 +157,7 @@ export function Landing() {
       }
     } catch (err) {
       clearFlushTimer()
-      setStreamingMessage(null)
+      clearOwnStream()
       toast.error(err instanceof ApiError ? err.displayMessage : 'Failed to stream message.')
       queryClient.invalidateQueries({ queryKey: ['chats', chatId] })
     }
@@ -167,7 +239,7 @@ export function Landing() {
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col">
       {chatQuery.data && <ThreadHeader chat={chatQuery.data} onNewChat={startNewChat} />}
-      <MessageList messages={messages} isSending={isSending} streamingMessage={streamingMessage} />
+      <MessageList messages={displayMessages} isSending={showTypingIndicator} />
       <div className="shrink-0 border-t border-border/80 bg-background px-4 py-3">
         <div className="mx-auto w-full max-w-3xl">
           <MessageInput
