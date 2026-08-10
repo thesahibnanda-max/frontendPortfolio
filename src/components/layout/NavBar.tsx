@@ -2,6 +2,7 @@ import { NavLink } from 'react-router-dom'
 import { PanelLeft } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import { StreamingToggle } from './StreamingToggle'
 import { ThemeToggle } from './ThemeToggle'
 import { useChatUiStore } from '@/store/chatUi'
 import { useProfessionalDetails } from '@/hooks/useDetails'
@@ -61,6 +62,7 @@ export function NavBar() {
           <Button variant="ghost" size="icon" aria-label="Toggle chat history" onClick={handleToggleHistory}>
             <PanelLeft className="size-4" />
           </Button>
+          <StreamingToggle />
           <ThemeToggle />
         </div>
       </div>
