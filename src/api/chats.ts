@@ -2,6 +2,7 @@ import { ApiError, api } from './client'
 import { parseSseStream } from './sse'
 import type {
   ApiErrorPayload,
+  ArchitectureType,
   ChatObject,
   ChatResponse,
   ChatStreamDoneEvent,
@@ -26,9 +27,9 @@ export const renameChat = (chatId: string, chatTitle: string) =>
     .patch<ChatResponse>(`/chats/${chatId}`, { chatTitle }, { auth: true })
     .then((r) => r.chat)
 
-export const sendMessage = (chatId: string, message: string) =>
+export const sendMessage = (chatId: string, message: string, architecture: ArchitectureType) =>
   api
-    .post<ChatResponse>(`/chats/${chatId}/messages`, { message }, { auth: true })
+    .post<ChatResponse>(`/chats/${chatId}/messages`, { message, architecture }, { auth: true })
     .then((r) => r.chat)
 
 export const searchChats = (query: string) =>
@@ -49,9 +50,10 @@ export interface StreamMessageHandlers {
 export async function streamMessage(
   chatId: string,
   message: string,
+  architecture: ArchitectureType,
   handlers: StreamMessageHandlers,
 ): Promise<void> {
-  const res = await api.stream(`/chats/${chatId}/messages/stream`, { message })
+  const res = await api.stream(`/chats/${chatId}/messages/stream`, { message, architecture })
   for await (const frame of parseSseStream(res)) {
     if (frame.event === 'token') {
       handlers.onToken((JSON.parse(frame.data) as ChatStreamTokenEvent).content)

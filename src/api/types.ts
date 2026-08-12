@@ -257,6 +257,9 @@ export interface ProfileDetailsResponse {
 // ---- Chat ----
 export type MessageRole = 'USER' | 'ASSISTANT'
 
+/** Which AI pipeline answers a message. Mirrors backend's `ArchitectureType`. */
+export type ArchitectureType = 'orchestrator-worker' | 'mcp'
+
 export interface Message {
   role: MessageRole
   message: string
@@ -279,6 +282,8 @@ export interface ListOfChatResponse {
 
 export interface ChatResponse {
   chat: ChatObject
+  /** Which pipeline answered — only present on `userPrompt`/`userPromptStream` responses. */
+  architecture?: ArchitectureType
 }
 
 export interface SearchResponse {
@@ -290,6 +295,7 @@ export interface ChatRequest {
   chatId?: string
   chatTitle?: string
   message?: string
+  architecture?: ArchitectureType
 }
 
 export interface SearchRequest {

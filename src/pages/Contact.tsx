@@ -122,7 +122,7 @@ export function Contact() {
           </Present>
 
           <Present value={professional?.twitterUrl ?? profile?.twitterUrl}>
-            {(url) => <LinkRow icon={<Globe className="size-4" />} label={shortUrl(url)} href={url} />}
+            {(url) => <LinkRow icon={<BrandIcon brand="x" className="size-4" />} label={shortUrl(url)} href={url} />}
           </Present>
 
           <Present value={professional?.githubLinks}>

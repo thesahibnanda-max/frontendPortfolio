@@ -1,4 +1,4 @@
-import { siGithub, siLeetcode, siCodeforces } from 'simple-icons'
+import { siGithub, siLeetcode, siCodeforces, siX } from 'simple-icons'
 import type { SVGProps } from 'react'
 
 // LinkedIn's mark is deliberately excluded from simple-icons (brand-
@@ -12,6 +12,7 @@ const SIMPLE_ICON_PATHS = {
   leetcode: siLeetcode.path,
   codeforces: siCodeforces.path,
   linkedin: LINKEDIN_PATH,
+  x: siX.path,
 } as const
 
 export type Brand = keyof typeof SIMPLE_ICON_PATHS

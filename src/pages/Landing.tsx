@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { motion } from 'motion/react'
 import { toast } from 'sonner'
 import { AmbientRatingLine } from '@/components/chat/AmbientRatingLine'
+import { ArchitectureSelector } from '@/components/chat/ArchitectureSelector'
 import { MessageInput } from '@/components/chat/MessageInput'
 import { MessageList } from '@/components/chat/MessageList'
 import { StarterPrompts } from '@/components/chat/StarterPrompts'
@@ -10,6 +11,7 @@ import { ThreadHeader } from '@/components/chat/ThreadHeader'
 import { ThreadSkeleton } from '@/components/chat/ThreadSkeleton'
 import { useChatUiStore } from '@/store/chatUi'
 import { useChat, useCreateChat, useSendMessage } from '@/hooks/useChats'
+import { useArchitecturePreferenceStore } from '@/store/architecturePreference'
 import { useStreamingPreferenceStore } from '@/store/streamingPreference'
 import { streamMessage } from '@/api/chats'
 import { ApiError } from '@/api/client'
@@ -47,6 +49,7 @@ export function Landing() {
 
   const { activeChatId, setActiveChatId } = useChatUiStore()
   const { streamingEnabled } = useStreamingPreferenceStore()
+  const { architecture } = useArchitecturePreferenceStore()
   const queryClient = useQueryClient()
 
   const chatQuery = useChat(activeChatId)
@@ -130,7 +133,7 @@ export function Landing() {
     let doneFired = false
 
     try {
-      await streamMessage(chatId, message, {
+      await streamMessage(chatId, message, architecture, {
         onToken: (content) => {
           buffer += content
           if (flushTimer === undefined) {
@@ -194,7 +197,7 @@ export function Landing() {
       if (streamingEnabled) {
         await doStreamingSend(chatId, message)
       } else {
-        await sendMessage.mutateAsync({ chatId, message })
+        await sendMessage.mutateAsync({ chatId, message, architecture })
       }
     } catch (err) {
       toast.error(err instanceof ApiError ? err.displayMessage : 'Failed to send message.')
@@ -234,6 +237,8 @@ export function Landing() {
             </p>
           </div>
 
+          <ArchitectureSelector />
+
           <div className="w-full">
             <MessageInput
               value={input}
@@ -265,7 +270,8 @@ export function Landing() {
         streamCompletedSignal={streamCompletedSignal}
       />
       <div className="shrink-0 border-t border-border/80 bg-background px-4 py-3">
-        <div className="mx-auto w-full max-w-3xl">
+        <div className="mx-auto flex w-full max-w-3xl flex-col gap-2">
+          <ArchitectureSelector compact />
           <MessageInput
             value={input}
             onChange={setInput}

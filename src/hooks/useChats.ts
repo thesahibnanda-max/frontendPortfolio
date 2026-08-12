@@ -8,6 +8,7 @@ import {
   searchChats,
 } from '@/api/chats'
 import { useAuthStore } from '@/store/auth'
+import type { ArchitectureType } from '@/api/types'
 
 const isAuthed = () => useAuthStore.getState().token !== null
 
@@ -48,8 +49,15 @@ export const useRenameChat = () => {
 export const useSendMessage = () => {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ chatId, message }: { chatId: string; message: string }) =>
-      sendMessage(chatId, message),
+    mutationFn: ({
+      chatId,
+      message,
+      architecture,
+    }: {
+      chatId: string
+      message: string
+      architecture: ArchitectureType
+    }) => sendMessage(chatId, message, architecture),
     onSuccess: (chat) => {
       queryClient.setQueryData(['chats', chat.chatId], chat)
       queryClient.invalidateQueries({ queryKey: ['chats'] })
