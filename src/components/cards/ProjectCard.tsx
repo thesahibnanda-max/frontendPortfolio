@@ -36,7 +36,7 @@ export function ProjectCard({ project }: { project: ProfileProject }) {
       onMouseMove={handleMouseMove}
       onMouseLeave={resetTilt}
       style={{ rotateX, rotateY, transformPerspective: 800 }}
-      className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5"
+      className="group relative min-h-44 overflow-hidden rounded-2xl border border-border bg-card p-5 sm:p-6"
     >
       <motion.div
         aria-hidden
